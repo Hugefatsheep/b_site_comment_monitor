@@ -105,7 +105,9 @@ def get_new_ip():
 
 
 if __name__ == "__main__":
-    for code in range(0, len(subarea_list)-1):
+    for code in range(0, len(subarea_list) - 1):
+        aid_list.clear()
+        bvid_list.clear()
         getAllAVList(subarea_list[code], 3)  # rid,page_start,page_end,size
         dir_name = "./" + str(subarea_list[code]) + "_"
         os.makedirs(dir_name)
