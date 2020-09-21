@@ -15,7 +15,7 @@ from fake_useragent import UserAgent
 # B站API详情 https://github.com/Vespa314/bilibili-api/blob/master/api.md
 
 # B站分区tID
-subarea_list = [24, 25, 47, 86, 27, 13, 33, 32, 51, 152, 167, 153, 168, 169, 195, 170, 3, 28, 31, 30, 194, 59, 193,
+subarea_list = [32, 51, 152, 167, 153, 168, 169, 195, 170, 3, 28, 31, 30, 194, 59, 193,
                 29, 130, 129, 20, 198, 199, 200, 154, 156, 4, 17, 171, 172, 65, 173, 121, 136, 19, 36, 201, 124, 207,
                 208, 209, 122, 188, 95, 189, 190, 191, 160, 138, 21, 76, 75, 161, 162, 163, 176, 174, 119, 22, 26, 126,
                 127, 155, 157, 158, 164, 159, 192, 202, 203, 204, 205, 206, 5, 71, 137, 131, 181, 182, 183, 85, 184,
@@ -35,7 +35,7 @@ dir_name = ""
 
 useragent = UserAgent(use_cache_server=False)
 headers = {'User-Agent': useragent.chrome}
-with open("proxy.txt", "r") as f:
+with open("proxy_2.txt", "r") as f:
     all_ip = f.readlines()
 
 
@@ -59,7 +59,9 @@ def getAllAVList(rid, day):  # page_start, page_end, size
 
 
 # 获取一个AV号视频下所有评论
-def getAllCommentList(item):
+def getAllCommentList(order):
+    item = aid_list[order]
+    BV_order = bvid_list[order]
     proxy = get_new_ip()  # 获取代理ip
     url = "http://api.bilibili.com/x/web-interface/view?aid=" + str(item)
     numtext = requests.get(url, proxies=proxy, headers=headers).text
@@ -73,7 +75,7 @@ def getAllCommentList(item):
         json_text_list = json.loads(text)
         try:
             for i in json_text_list["data"]["replies"]:
-                info_list.append([i["member"]["mid"], i["content"]["message"]])
+                info_list.append([BV_order, i["member"]["mid"], i["content"]["message"], str(i["ctime"])])
         except TypeError:
             failed_list.append(item)
             print("评论访问被拒绝")
@@ -88,14 +90,20 @@ def getAllCommentList(item):
 def saveTxt(filename, filecontent):
     if filecontent:
         filename = str(filename) + ".txt"
-        with open(dir_name + "/" + filename, "w+", encoding='utf-8') as fp:
+        with open(dir_name + "/" + filename, "a", encoding='utf-8') as fp:
             for content in filecontent:
                 if content[0] != '':
-                    fp.write(content[0] + ": " + content[1] + "\n")
+                    fp.write(content[0] + " - " + content[1] + ": " + content[2] + " - " + get_time(int(content[3])) + "\n")
         print("文件" + str(filename) + "写入完毕")
     else:
         print(str(filename) + "无评论。")
         return 0
+
+
+def get_time(now):
+    transed_time = time.localtime(now)
+    real_time = time.strftime("%Y-%m-%d %H:%M:%S", transed_time)
+    return real_time
 
 
 def get_new_ip():
@@ -105,17 +113,19 @@ def get_new_ip():
 
 
 if __name__ == "__main__":
-    for code in range(0, len(subarea_list)-1):
+    for code in range(0, len(subarea_list) - 1):
+        aid_list.clear()
+        bvid_list.clear()
         getAllAVList(subarea_list[code], 3)  # rid,page_start,page_end,size
         dir_name = "./" + str(subarea_list[code]) + "_"
         os.makedirs(dir_name)
         count = 0
-        for item in aid_list:
+        for order in range(0, len(aid_list)-1):
             info_list.clear()
-            getAllCommentList(item)
+            getAllCommentList(order)
             saveTxt(bvid_list[count], info_list)
             count += 1
             time.sleep(1)
-        with open(dir_name + "/failed.txt", "w+", encoding='utf-8') as fp:
+        with open(dir_name + "/failed.txt", "a", encoding='utf-8') as fp:
             for title in failed_list:
                 fp.write(str(title) + "\n")
