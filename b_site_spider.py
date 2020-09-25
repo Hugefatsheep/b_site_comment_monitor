@@ -6,16 +6,16 @@ __time__ = '2020/9/19'
 """
 import requests
 import random
-import os
 import json
 import time
 from fake_useragent import UserAgent
+import pymysql
 
 # https://api.bilibili.com/x/web-interface/newlist?rid=121&type=1&pn=5&ps=248900 分区视频BV号
-# B站API详情 https://github.com/Vespa314/bilibili-api/blob/master/api.md
+# B站API详情 https://github.com/SocialSisterYi/bilibili-API-collect
 
 # B站分区tID
-subarea_list = [32, 51, 152, 167, 153, 168, 169, 195, 170, 3, 28, 31, 30, 194, 59, 193,
+subarea_list = [1, 24, 25, 47, 86, 27, 13, 33, 32, 51, 152, 167, 153, 168, 169, 195, 170, 3, 28, 31, 30, 194, 59, 193,
                 29, 130, 129, 20, 198, 199, 200, 154, 156, 4, 17, 171, 172, 65, 173, 121, 136, 19, 36, 201, 124, 207,
                 208, 209, 122, 188, 95, 189, 190, 191, 160, 138, 21, 76, 75, 161, 162, 163, 176, 174, 119, 22, 26, 126,
                 127, 155, 157, 158, 164, 159, 192, 202, 203, 204, 205, 206, 5, 71, 137, 131, 181, 182, 183, 85, 184,
@@ -75,7 +75,7 @@ def getAllCommentList(order):
         json_text_list = json.loads(text)
         try:
             for i in json_text_list["data"]["replies"]:
-                info_list.append([BV_order, i["member"]["mid"], i["content"]["message"], str(i["ctime"])])
+                info_list.append([BV_order, i["member"]["uname"], i["content"]["message"], str(i["ctime"])])
         except TypeError:
             failed_list.append(item)
             print("评论访问被拒绝")
@@ -86,15 +86,23 @@ def getAllCommentList(order):
     # print(info_list)
 
 
-# 保存评论文件为txt
+# 保存评论进数据库
 def saveTxt(filename, filecontent):
     if filecontent:
-        filename = str(filename) + ".txt"
-        with open(dir_name + "/" + filename, "a", encoding='utf-8') as fp:
-            for content in filecontent:
-                if content[0] != '':
-                    fp.write(content[0] + " - " + content[1] + ": " + content[2] + " - " + get_time(int(content[3])) + "\n")
-        print("文件" + str(filename) + "写入完毕")
+        for content in filecontent:
+            if content[0] != '':
+                connection = pymysql.connect(
+                    host='locakhost',
+                    user='root',
+                    passwd='Pass123456@',
+                    database='blbl',
+                    charset='utf8mb4'
+                )
+                cursor = connection.cursor()
+                cursor.execute(
+                    "INSERT INTO daily(id, bvnum, username, content, date) VALUES (NULL, '%s', '%s', '%s', '%s')" %
+                    (content[0], content[1], content[2], get_time(int(content[3]))))
+                cursor.close()
     else:
         print(str(filename) + "无评论。")
         return 0
@@ -117,15 +125,13 @@ if __name__ == "__main__":
         aid_list.clear()
         bvid_list.clear()
         getAllAVList(subarea_list[code], 3)  # rid,page_start,page_end,size
-        dir_name = "./" + str(subarea_list[code]) + "_"
-        os.makedirs(dir_name)
         count = 0
-        for order in range(0, len(aid_list)-1):
+        for order in range(0, len(aid_list) - 1):
             info_list.clear()
             getAllCommentList(order)
             saveTxt(bvid_list[count], info_list)
             count += 1
             time.sleep(1)
-        with open(dir_name + "/failed.txt", "a", encoding='utf-8') as fp:
+        with open("failed.txt", "a", encoding='utf-8') as fp:
             for title in failed_list:
                 fp.write(str(title) + "\n")

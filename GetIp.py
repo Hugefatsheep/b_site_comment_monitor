@@ -16,6 +16,7 @@ headers = {'User-Agent': ua.chrome}
 http_proxies = []  # 全IP容器
 uesful_ip_pool = []  # 有用IP容器
 uesless_ip_pool = []  # 无用IP容器
+# 350
 with open("proxy.txt", "r") as f:
     all_ip = f.readlines()
 
@@ -29,8 +30,7 @@ def get_new_ip():
 # proxy={'http':'IP:PORT'}
 def ip_spider():  # 填写需要爬取IP的页数
     n = int(input('请输入需要爬取的页数：'))
-
-    for a in range(1, n + 1):
+    for a in range(n - 49, n + 1):
         proxy = get_new_ip()
         url = f'https://www.kuaidaili.com/free/inha/{a}/'
         try:
@@ -53,15 +53,13 @@ def ip_spider():  # 填写需要爬取IP的页数
             ports_list = re_tree.xpath('//td[@data-title="PORT"]/text()')
 
             print(ips_list)
-            print(types_list)
-            print(ports_list)
+
             for i in list(zip(types_list, ips_list, ports_list)):
                 ip_port = i[1] + ':' + i[2]
                 ip_dic = {i[0]: ip_port}
                 http_proxies.append(ip_dic)
         if a % 5 == 0:
-            time.sleep(5)
-        print(a)
+            time.sleep(3)
 
 
 def check_ip():  # 定义IP检测
@@ -76,7 +74,7 @@ def check_ip():  # 定义IP检测
 
 ip_spider()
 check_ip()
-with open("proxy_2.txt", "w+") as fp:
+with open("proxy_2.txt", "a") as fp:
     for ip_address in uesful_ip_pool:
         fp.write(ip_address["HTTP"] + "\n")
 
