@@ -31,7 +31,7 @@ info_list = []
 # 获取失败AV号
 failed_list = []
 
-dir_name = ""
+already_list = []
 
 useragent = UserAgent(use_cache_server=False)
 headers = {'User-Agent': useragent.chrome}
@@ -89,20 +89,21 @@ def getAllCommentList(order):
 # 保存评论进数据库
 def saveTxt(filename, filecontent):
     if filecontent:
+        connection = pymysql.connect(
+            host='localhost',
+            user='root',
+            passwd='',
+            database='blbl',
+            charset='utf8mb4'
+        )
+        cursor = connection.cursor()
         for content in filecontent:
             if content[0] != '':
-                connection = pymysql.connect(
-                    host='locakhost',
-                    user='root',
-                    passwd='',
-                    database='blbl',
-                    charset='utf8mb4'
-                )
-                cursor = connection.cursor()
                 cursor.execute(
                     "INSERT INTO daily(id, bvnum, username, content, date) VALUES (NULL, '%s', '%s', '%s', '%s')" %
                     (content[0], content[1], content[2], get_time(int(content[3]))))
-                cursor.close()
+                connection.commit()
+        cursor.close()
     else:
         print(str(filename) + "无评论。")
         return 0
@@ -135,3 +136,5 @@ if __name__ == "__main__":
         with open("failed.txt", "a", encoding='utf-8') as fp:
             for title in failed_list:
                 fp.write(str(title) + "\n")
+        with open("done.txt", "a", encoding='utf-8')as f:
+            f.write(str(subarea_list[code]) + "\n")
