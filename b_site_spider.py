@@ -94,7 +94,7 @@ def saveTxt(filename, filecontent):
                 connection = pymysql.connect(
                     host='locakhost',
                     user='root',
-                    passwd='Pass123456@',
+                    passwd='',
                     database='blbl',
                     charset='utf8mb4'
                 )
